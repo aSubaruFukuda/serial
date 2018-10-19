@@ -63,6 +63,8 @@ func openPort(name string, baud int, databits byte, parity Parity, stopbits Stop
 	}()
 
 	// Base settings
+	iflagToUse := unix.IGNPAR | unix.IGNCR
+
 	cflagToUse := unix.CREAD | unix.CLOCAL | rate
 	switch databits {
 	case 5:
@@ -98,11 +100,16 @@ func openPort(name string, baud int, databits byte, parity Parity, stopbits Stop
 	default:
 		return nil, ErrBadParity
 	}
+
+	lflagToUse := unix.ICANON
+	lflagToUse &^= (unix.ECHO | unix.CLOCAL | unix.ISIG | unix.IEXTEN)
+
 	fd := f.Fd()
 	vmin, vtime := posixTimeoutValues(readTimeout)
 	t := unix.Termios{
-		Iflag:  unix.IGNPAR,
+		Iflag:  iflagToUse,
 		Cflag:  cflagToUse,
+		Lflag:  lflagToUse,
 		Ispeed: rate,
 		Ospeed: rate,
 	}
